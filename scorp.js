@@ -226,11 +226,11 @@ Element.prototype.shake = function() {
 
 Element.prototype.slowRemove = function(t) {
     let E = this;
-    E.hide(t);
+    E.fadeOut(t);
     setTimeout(function() {
         E.remove();
     }, t+100);
-}
+};
 
 /* Element.prototype.css = function(prop, val) {
     let E = this;
@@ -329,3 +329,116 @@ Element.prototype.css = function(s) {
     E.setAttribute('style', g + s);
     return E;
 }*/
+
+(function() {
+    function assemble(line, arr) {
+        let res = '';
+        for (let token of line.value) {
+            if (typeof token === 'string') res += token;
+            else {
+                arr.push(token.name);
+                res += '(' + assemble(token, arr) + ')';
+            }
+        }
+        return res;
+    }
+
+    function unroll_mod(exp) {
+        if (exp[0] == '|') return exp.slice(1).trim().split(/\s+/).join('|')
+        return exp;
+    }
+
+    function process(var_name, r, vars) {
+        r = r.replace(/@([A-z]+)/g, '蠍@$1蠍').split('蠍').map(function(x){
+            if (x.startsWith('@')) {
+                if (!vars[x.slice(1)]) vars[x.slice(1)] = {name: x.slice(1)};
+                return vars[x.slice(1)];
+            }
+            return x;
+        });
+        //console.log(r);
+
+        if (!vars[var_name]) vars[var_name] = {name: var_name};
+        vars[var_name].value = r;
+    }
+
+    function translate(regex, arr) {
+        regex = regex.trim().replace(/\(/g, '(?:').split(/\n+/);
+        let vars = {};
+
+        for (let line of regex) {
+            let var_def = line.match(/@([A-z]+)\s*=(.+)/);
+            if (var_def) {
+                let r = unroll_mod(var_def[2].trim());
+                process(var_def[1], r, vars);
+                continue;
+            }
+            let main = line.match(/return\s(.+)/);
+            if (main) {
+                main = main[1].trim();
+                process('^', main, vars);
+            }
+        }
+
+        return assemble(vars['^'], arr).replace(/ /g, '').replace(/_/g, ' ');
+    }
+
+    String.prototype.regex_match = function(regex) {
+        let arr = [];
+        regex = translate(regex, arr);
+
+        console.log(arr, regex);
+        let found = this.match(regex);
+
+        let res = {};
+        let count = {};
+
+        if (found) {
+            console.log(found);
+            res['^'] = found[0];
+            for (let i=0; i < arr.length; i++) {
+                found[i+1] = found[i+1] || '';
+                if (!res[arr[i]]) res[arr[i]] = found[i+1];
+                else {
+                    if (!count[arr[i]]) count[arr[i]] = 1;
+                    count[arr[i]]++;
+                    res[arr[i] + count[arr[i]]] = found[i+1];
+                    //if (typeof res[arr[i]] === 'string') res[arr[i]] = [res[arr[i]]];
+                    //res[arr[i]].push(found[i+1]);
+                }
+            }
+        }
+
+        return res;
+    };
+
+    String.prototype.regex_replace = function(regex, replacement) {
+        regex = new RegExp(translate(regex, []), 'g');
+        return this.replace(regex, replacement);
+    };
+})();
+
+
+/*
+let res = 'geschenkheit'.regex_match(`
+@first_two = @init? (@vowel)
+@pref = | ${Verb.all_pref.join(' ')}
+@prefs = @pref*
+@init = | kn pf str? spr? sch[lmnrw]? [tdkgpbf]r [kgfbp]l pfl zw qu ch @consonant
+@vowel = [aiueoäüö]
+@consonant = [wrtpsdfghjklzvbnmc]
+@rest = @first_two ((.+ e[lr])n | (.+)en)
+@syl = @first_two @vowel* @consonant*
+
+@ending = \\w*
+return gesch @vowel @vowel? nk @ending
+`);*/
+
+
+res = 'Hello! My name is John Smith.'.regex_match(`
+@first_name = \\w+
+@last_name = \\w+
+return My_name_is_ @first_name _ @last_name
+`);
+
+console.log(res);

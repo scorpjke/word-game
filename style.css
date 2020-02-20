@@ -30,7 +30,7 @@
 }
 
 .settings > div {
-	padding: 5px;
+	padding: 10px;
 }
 
 .frequency_slider {
@@ -83,7 +83,7 @@ R {
   opacity: 1;
 }
 
-.double-range > * {
+.xxxdouble-range > * {
 	position: absolute;
 }
 
@@ -201,15 +201,15 @@ input:checked + .slider2:before {
     border-radius: 10px;
     position: relative;
     background-color:white;
-    min-width: 220px;
+    width: 220px;
     min-height: 280px;
-    max-width: 75%;
-    margin-left: auto;
-    margin-right: auto;
-    display: flex;
+    xmax-width: 75%;
+    xmargin-left: auto;
+    xmargin-right: auto;
+    xdisplay: flex;
     flex-flow: column;
     justify-content: space-around;
-    padding: 20px;
+    padding: 30px;
 }
 
 .plenka {
@@ -218,10 +218,117 @@ input:checked + .slider2:before {
     align-items: center;
 }
 
-.plenka > div {
+.xplenka > div {
     display: flex;
     align-content: center;
     align-items: center;
     flex-wrap: wrap;
     justify-content: center;
+}
+
+.popup_tabs {
+	width: 100%;
+	position: absolute;
+	left: 0px;
+	top: 0px;
+	cursor: default;
+	display: flex;
+	justify-content: center;
+}
+
+.popup_tabs > div {
+	padding: 5px 4%;
+}
+
+.tag {
+	border-radius: 20px;
+	border: 1px solid pink;
+	padding: 1px 5px;
+	cursor: default;
+	display: flex;
+	width: auto;
+	margin: 5px;
+}
+
+.tagbox {
+	display: flex;
+	flex-wrap: wrap;
+}
+
+.krest {
+    transform: scale(0);
+    transition: all 0.3s ease;
+}
+
+.tag:hover .krest {
+	transform: scale(1);
+}
+
+
+ /* Dropdown Button */
+.dropbtn {
+  background-color: #3498DB;
+  color: white;
+  padding: 5px;
+  xfont-size: 16px;
+  border: none;
+  cursor: pointer;
+}
+
+/* Dropdown button on hover & focus */
+.dropbtn:hover, .dropbtn:focus {
+  background-color: #2980B9;
+}
+
+/* The container <div> - needed to position the dropdown content */
+.dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+/* Dropdown Content (Hidden by Default) */
+.dropdown-content {
+  position: absolute;
+  background-color: #f1f1f1;
+  min-width: 160px;
+  box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+  z-index: 1;
+}
+
+/* Links inside the dropdown */
+.dropdown-content a {
+  color: black;
+  padding: 12px 16px;
+  text-decoration: none;
+  display: block;
+}
+
+/* Change color of dropdown links on hover */
+.dropdown-content a:hover {background-color: #ddd}
+
+/* Show the dropdown menu (use JS to add this class to the .dropdown-content container when the user clicks on the dropdown button) */
+.show {display:block;} 
+
+.tooltip {
+  position: relative;
+  display: inline-block;
+  border-bottom: 1px dotted black;
+}
+
+.tooltip .tooltiptext {
+  visibility: hidden;
+  width: 120px;
+  background-color: black;
+  color: #fff;
+  text-align: center;
+  border-radius: 6px;
+  padding: 5px 0;
+
+  /* Position the tooltip */
+  position: absolute;
+  z-index: 1;
+}
+
+.tooltip:hover .tooltiptext {
+  visibility: visible;
 }

@@ -197,14 +197,39 @@ class Verb {
     constructor(verb) {
         let V = this;
         
-        let possible_prefix = Verb.verbs_with_no_prefix.includes(verb) ? '^()' : `^(${Verb.sep_pref.join('|')}|${Verb.insep_pref.join('|')}|)`;
-        let found = verb.match(possible_prefix + `(...+)(en)`) || verb.match(possible_prefix + `(..+)(n)`);
+        //console.log(verb);
+        let s = `(kn|pf|str?|spr?|sch[lmnrw]?|[tdkgpbf]r|[kgfbp]l|pfl|zw|qu|ch|[wrtpsdfghjklzvbnm])?[aiueoäüö]`;
+        let p = '(' + Verb.all_pref.join('|') + ')';
+        let found = verb.match(`^${p}*(${s}.+)(en)`) || verb.match(`^${p}*(${s}.*e[rl])(n)`) || verb.match(`^${p}*((t)u)(n)`) || verb.match(`^${p}*((s)ei)(n)`);
 
-        V.prefix = found[1];
         V.stem = found[2];
-        V.rest = found[2] + found[3];
+        V.rest = found[2] + found[4];
 
-        let found2 = strong_verbs[verb] || strong_verbs[V.rest];
+        V.sep_pref = [];
+        V.insep_pref = [];
+
+        if (found[1]) {
+            let prefixes = verb.slice(0, verb.length - V.rest.length).replace( new RegExp(p, 'g'), '$1 ').trim().split(' ');
+            V.number_of_prefixes = prefixes.length;
+
+            let s = V.sep_pref;
+
+            for (let pr of prefixes) {
+                if (Verb.insep_pref.includes(pr) ) s = V.insep_pref;
+                s.push(pr);
+            }
+        }
+        V.sep_pref = V.sep_pref.join('');
+        V.insep_pref = V.insep_pref.join('');
+
+        
+        if (V.sep_pref) {
+            V.prefix_type = V.insep_pref ? 'both' : 'sep';
+        }
+        else if (V.insep_pref) V.prefix_type = 'insep';
+        else V.prefix_type = 'none';
+
+        let found2 = strong_verbs[verb] || strong_verbs[V.insep_pref + V.rest] || strong_verbs[V.rest];
         
         if (found2) {
             Object.assign(V, found2);
@@ -221,22 +246,18 @@ class Verb {
             V.v3 = 'ge' + t;
         }
         
-        let detach = (w, pref) => w.replace(new RegExp(`^${pref}`) , '');
-
-        if (Verb.insep_pref.includes(V.prefix)) {
-            if (V.special_v_er)
-                V.special_v_er = detach(V.special_v_er, V.prefix); 
-
-            V.v2 = detach(V.v2, V.prefix);
-            V.v3 = detach(V.v3, 'ge');
-            V.v3 = detach(V.v3, V.prefix);
-
-            V.prefix_type = 'insep';
+        function detach(w, pref) {
+            return w.replace(new RegExp(`^${pref}`), '');
         }
-        else if (V.prefix)
-            V.prefix_type = 'sep';
-        else V.prefix_type = 'none';
 
+        if (V.insep_pref) {
+            if (V.special_v_er)
+                V.special_v_er = detach(V.special_v_er, V.insep_pref); 
+
+            V.v2 = detach(V.v2, V.insep_pref);
+            V.v3 = detach(V.v3, 'ge');
+            V.v3 = detach(V.v3, V.insep_pref);
+        }
         if (V.stem.match(/ier$/)) V.v3 = detach(V.v3, 'ge');
     }
 
@@ -245,12 +266,12 @@ class Verb {
         let res = [];
         let p;
 
-        if (tense == 'inf') return [V.prefix + V.rest];
+        if (tense == 'inf') return [V.sep_pref + V.insep_pref + V.rest];
         else if (tense == 'zu-inf') {
-            if (V.prefix_type == 'sep') return [V.prefix + 'zu' + V.rest];
-            else return ['zu', V.prefix + V.rest];
+            if (V.sep_pref) return [V.sep_pref + 'zu' + V.insep_pref + V.rest];
+            else return ['zu', V.insep_pref + V.rest];
         }
-        else if (tense == 'past participle') return [V.prefix + V.v3];
+        else if (tense == 'past participle') return [V.sep_pref + V.insep_pref + V.v3];
         
         if (['ich','du','ihr','wir','sie'].includes(person)) p = person;
         else p = 'er';
@@ -275,24 +296,24 @@ class Verb {
         else if (tense.includes('perfect')) {
             let time = tense.split(' ')[0];
             let aux = 'haben';
-            if (Verb.verbs_that_use_sein.includes(V.rest) || Verb.verbs_that_use_sein.includes(V.prefix + V.rest)) {
+            if (Verb.verbs_that_use_sein.includes(V.rest) || Verb.verbs_that_use_sein.includes(V.in('inf'))) {
                 aux = 'sein';
             }
             aux = new Verb(aux).make(time, p);
             
-            if (time == 'future') aux = [aux[0], V.prefix + V.v3, aux[1]];
-            else aux.push(V.prefix + V.v3);
+            if (time == 'future') aux = [aux[0], V.in('past participle'), aux[1]];
+            else aux.push(V.in('past participle'));
 
             return aux;
         }
         else if (tense == 'future') {
             let aux = new Verb('werden').make('present', p);
-            aux.push(V.prefix + V.rest);
+            aux.push(V.in('inf') );
             return aux;
         }
         else if (tense == 'fake subjunctive') {
             let aux = new Verb('würden').make('present', p);
-            aux.push(V.prefix + V.rest);
+            aux.push(V.in('inf') );
             return aux;
         }
         else if (tense == 'real subjunctive') {
@@ -310,10 +331,8 @@ class Verb {
 
         if (res.length == 0) res.push(smart_unite(res_stem, res_ending));
 
-        if (V.prefix) {
-            if (V.prefix_type == 'insep') res[0] = V.prefix + res[0];
-            else res.push(V.prefix);
-        }
+        if (V.insep_pref) res[0] = V.insep_pref + res[0];
+        if (V.sep_pref) res.push(V.sep_pref);
         
         return res;
     }
@@ -323,30 +342,26 @@ class Verb {
     }
 
     full_conjugation() {
-        for (let form of ['inf', 'zu-inf']) {
+        for (let form of ['inf', 'zu-inf', 'past participle']) {
             console.log('---------' + form + '---------');
-            console.log(this.make(form));
+            console.log(this.in(form));
         }
         for (let tense of ['present','present perfect', 'future', 'future perfect', 'preterite', 'preterite perfect', 'subjunctive', 'subjunctive perfect']) {
             console.log('---------' + tense + '---------');
             for (let person of ['ich','du','er','wir','ihr','sie']) {
-                console.log([person].concat(this.make(tense,person)));
+                console.log([person].concat(this.make(tense,person)).join(' '));
             }
         }
     }
 }
 
-Verb.verbs_with_no_prefix = "antworten".split(' ');
-
-Verb.sep_pref = "ab an auf aus bei durch ein fort hinter hin los mit nach vor weg zusammen zurück zu".split(' ');
-Verb.insep_pref = "be emp ent er ge miss über un ver zer".split(' ');
+Verb.sep_pref = "ab an auf aus bei bevor durch ein fest fort gegen hinter hin her los mit nach statt vor weg weiter wieder zusammen zurück zu".split(' ');
+Verb.insep_pref = "be emp ent er ge miss über un unter um wider ver voll zer".split(' ');
+Verb.all_pref = Verb.sep_pref.concat(Verb.insep_pref).sort( (a,b) => a.length < b.length );
 
 Verb.verbs_that_use_sein = `aufwachen bleiben erscheinen ertrinken fahren fallen fliegen folgen gebren gehen gelingen geschehen joggen klettern kommen kriechen laufen passieren reisen reiten rennen schlafen schwimmen sein sinken springen steigen sterben treten wachsen wandern werden`.split(' ');
 Verb.standard_endings = {'ich':'e', 'du':'st', 'er':'t', 'ihr':'t', 'wir':'en', 'sie':'en'};
 
-
-Verb.verb_list = "gehen kommen reisen fliegen wohnen heißen kaufen trinken arbeiten machen fragen antworten hören sagen verstehen denken suchen finden bleiben bringen bedeuten besuchen schmecken schreiben spielen lernen zeigen kochen beginnen stehen liegen glauben nennen kennen stellen bekommen bestellen erzählen versuchen erklären sitzen gehören warten erwarten verlieren legen schließen öffnen studieren fehlen vergleichen singen tanzen bezahlen verdienen reden brauchen passieren kosten senden schicken heiraten sterben feiern lieben wiederholen teilen wissen fahren essen schlafen geben sehen sprechen nehmen lesen vergessen waschen laufen tragen aussehen anfangen anrufen aufstehen einladen fühlen interessieren erinnern treffen vorstellen".split(' ').concat(Object.keys(strong_verbs));
-//Verb.verb_list2 = 
 
 function smart_unite(stem, ending) {
     if (stem.match(/[td]$/) && ending.match(/^s?t/) )

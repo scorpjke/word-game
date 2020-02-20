@@ -25,7 +25,7 @@ let German = function() {
 		freq: {min: 1, max: 500},
 		show_translations: true,
 		always_pronounce: false,
-		//themes: new Set(['listening'])
+		themes: new Set(['listening'])
 	};
 
 	let irr_checkboxes = div();
@@ -84,10 +84,34 @@ let German = function() {
 		settings.always_pronounce = always_pronounce_switch.enabled;
 	});
 
+	let settings_tabs = {};
 
 	let slider_dom;
 
-	settings.dom = div('settings').ap(
+	settings_tabs['General'] = div('settings').ap(
+		div('container').ap(
+			div().text('Words frequency'),
+			div('tooltip').text('(?)').ap(
+				div('tooltiptext').text('The dictionary has 4000 words sorted by frequency (common to rare). Choose the range')
+			),
+		),
+		div('frequency_slider').ap(
+			slider_dom = div(),
+		),
+	);
+
+	settings_tabs['Verbs'] = div('settings').ap(
+		div().ap(
+			irr_checkboxes
+		),
+		div().ap(
+			pref_checkboxes
+		)
+	);
+
+	settings_tabs['Nouns'] = div();
+
+	settings_tabs['Other'] = div('settings').ap(
 		div().ap(
 			always_pronounce_switch.dom,
 			crel('span').text('Always pronounce')
@@ -96,19 +120,11 @@ let German = function() {
 			show_translations_switch.dom,
 			crel('span').text('Show translations')
 		),
-		div().ap(
-			crel('span').text('Verbs settings'),
-			irr_checkboxes
-		),
-		div().ap(
-			pref_checkboxes
-		),
-		div('frequency_slider').ap(
-			slider_dom = div(),
-			//div().text('Common to rare')
-		)
 	);
 
+	//console.log()
+
+	settings.dom = Tabs(settings_tabs).dom;
 
 	let frequency_slider = noUiSlider.create(slider_dom, {
 	    range: {
@@ -251,6 +267,16 @@ let German = function() {
 			}
 		]
 	};
+
+	let choose_task = TagBox(Object.keys(tasks));
+	choose_task.set_tag_set(settings.themes);
+
+	settings_tabs['General'].ap(
+		div().ap(
+			div().text('Current tasks:'),
+			choose_task.dom
+		)
+	);
 
 	document.body.on('keydown', function(e){
 		//console.log(e.key);

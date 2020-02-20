@@ -154,7 +154,7 @@ angewiesen adj dependent 3059
 angreifen verb attack 2657
 Angriff der attack 1082
 Angst die fear, anxiety 465
-angucken, ankucken verb look 2131
+angucken verb look 2131
 anhalten verb stop, last 1783
 anhand prep on the basis of, with the aid of 1670
 Anhänger der supporter, trailer 2974
@@ -796,7 +796,7 @@ danke adv thanks 778
 danken verb thank 2667
 dann adv then 33
 daran, dran pron on it 290
-darauf, drauf pron on it 193
+darauf pron on it 193
 daraufhin adv as a result 2668
 daraus pron from it 801
 darin, drin, drinnen pron in it, inside 315
@@ -1630,7 +1630,7 @@ Gründung die foundation 2359
 Gruppe die group 363
 Gruß der greeting 3980
 grüßen verb greet 3459
-gucken, kucken verb look 1794
+gucken verb look 1794
 gültig adj valid 3092
 Gunst die goodwill, favour 3741
 günstig adj favourable, good 1462
@@ -1695,12 +1695,12 @@ heraus pron out 1190
 herausfinden verb find out 2467
 Herausforderung die challenge 2189
 herausgeben verb publish, give change, hand out 3981
-herauskommen, rauskommen verb come out 1556
+herauskommen verb come out 1556
 herausnehmen verb take out 3745
 herausstellen verb emphasize, come to light 2144
 Herbst der autumn 1376
-herein, rein adv in, into 2906
-hereinkommen, reinkommen verb come in 1319
+herein adv in, into 2906
+hereinkommen verb come in 1319
 herkommen verb come here 2419
 herkömmlich adv conventional 3316
 Herkunft die origin 2831
@@ -4037,7 +4037,7 @@ zwölf num twelve 882
 	let s = line.match(/(.+) (der|die|das|MF|adj|adv|verb|prep|pron|conj|num|interj) (.+) (\d+)/);
 	if (s) {
 		let res = {
-			word: s[1],
+			word: s[1].replace(/\(.+\)/,'').trim(),
 			type: s[2],
 			translation: s[3],
 			frequency: parseInt(s[4])

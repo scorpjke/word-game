@@ -7,6 +7,116 @@ gifs.is_child('angry', 'negative');
 gifs.is_child('happy', 'positive');
 
 
+function Tag(text) {
+	let T = {}, krest;
+	let dom = div('tag').ap(
+		div().text(text),
+		krest = div('krest').text('×')
+	);
+
+	krest.onClick(function() {
+		if (T.onKrestClick) T.onKrestClick();
+	});
+
+
+	Object.assign(T, {dom, krest});
+	return T;
+}
+
+
+function TagBox(arr) {
+	let T = {}, dropdown, box, add_btn;
+	T.tag_set = new Set();
+	let info = {};
+
+	let dom = div().ap(
+		box = div('tagbox'),
+		div('dropdown').ap(
+			add_btn = crel('button').addClass('dropbtn').html('Add'),
+			dropdown = div('dropdown-content'),
+		)
+	);
+
+	dropdown.hide();
+
+	for (let t of arr) {
+		let op, a;
+		a = new Tag(t);
+
+		dropdown.ap(
+			op = crel('a').html(t)
+		);
+		a.dom.hide();
+		box.ap(a.dom);
+
+		op.onClick( () => add(t) );
+		a.onKrestClick = () => remove(t);
+
+		info[t] = {dropdown_el: op, tag: a.dom};
+	}
+	
+	add_btn.onClick(function(){
+		dropdown.toggle();
+	});
+
+	function add(t) {
+		info[t].dropdown_el.hide();
+		info[t].tag.show();
+		T.tag_set.add(t);
+	}
+
+	function remove(t) {
+		info[t].dropdown_el.show();
+		info[t].tag.hide();
+		T.tag_set.delete(t);
+	}
+
+	function set_tag_set(set) {
+		T.tag_set = set;
+		for (let t in info) {
+			set.has(t) ? add(t) : remove(t);
+		}
+	}
+
+	Object.assign(T, {dom, set_tag_set});
+	return T;
+}
+
+function Tabs(tab_info) {
+	let T = {};
+	let labels = {};
+
+	let settings_body = div(), tabs_div;
+
+	T.dom = div().ap(
+		tabs_div = div('popup_tabs'),
+		settings_body
+	);
+
+	let active_tab;
+
+	for (let tab in tab_info) {
+		//let dom = tab_info[tab];
+		tabs_div.ap(
+			labels[tab] = div().text(tab).onClick( function(){
+				switch_tab(tab);
+			}),
+		);
+	}
+
+	function switch_tab(tab) {
+		if (active_tab) {
+			labels[active_tab].style.backgroundColor = '';
+		}
+		settings_body.empty().ap(tab_info[tab]);
+		labels[tab].style.backgroundColor = '#8dfca5';
+		active_tab = tab;
+	}
+
+	switch_tab(Object.keys(tab_info)[0]);
+	return T;
+}
+
 class PopUp {
     constructor() {
         let PU = this;
@@ -281,3 +391,119 @@ document.body.ap(
 	crel('h1').text('Practice German'),
 	Game.dom
 );
+
+
+let Deck = function() {
+	let D = {};
+	D.cards = [];
+
+	D.full = function() {
+		D.cards = [];
+		for (let value of [2,3,4,5,6,7,8,9,10,'J','Q','K','A']) {
+			for (let suit of ['hearts','clubs','diamonds','spades']) {
+				D.cards.push({value,suit});
+			}
+		}
+	}
+	/*
+	D.shuffle = function() {
+		let new_cards = [];
+		while (D.cards.length > 0) {
+			let r = Math.floor(Math.random()*D.cards.length);
+			new_cards.push(D.cards[r]);
+			D.cards.splice(r, 1);
+		}
+		D.cards = new_cards;
+	}*/
+
+	D.shuffle = function() {
+		let a = D.cards;
+
+		for (let i = a.length - 1; i > 0; i--) {
+	        const j = Math.floor(Math.random() * (i + 1));
+	        [a[i], a[j]] = [a[j], a[i]];
+	    }
+	}
+
+	return D;
+}
+
+
+
+
+
+function a_pair_in_three_cards(deck) {
+	return deck.cards[0].suit == deck.cards[1].suit || deck.cards[0].suit == deck.cards[2].suit || deck.cards[1].suit == deck.cards[2].suit;
+}
+
+function all_four_different_suit(deck) {
+	let h = new Set();
+	for (let i=0; i < 4; i++) {
+		if (h.has(deck.cards[i].suit)) return false;
+		else h.add(deck.cards[i].suit);
+	}
+	return true;
+}
+
+function is_black(card) {
+	return card.suit == 'spades' || card.suit == 'clubs';
+}
+
+function three_cards_black(d) {
+	return is_black(d.cards[0]) && is_black(d.cards[1]) && is_black(d.cards[2]) && is_black(d.cards[3]);
+}
+
+
+function all_six_weak(d) {
+	let strong_suit_card = d.cards[0];
+	for (let i=1; i <= 6; i++) {
+		if (strong_suit_card.suit == d.cards[i].suit) return false;
+	}
+	return true;
+}
+
+function exactly_one_strong(d) {
+	let strong_suit_card = d.cards[0];
+	let counter = 0;
+	for (let i=1; i <= 6; i++) {
+		if (strong_suit_card.suit == d.cards[i].suit) counter++;
+	}
+	return counter == 2;
+}
+
+
+function flush(d) {
+	let cards_with_suit = {hearts:0, spades:0, clubs:0, diamonds:0};
+	for (let i=0; i < 7; i++) {
+		cards_with_suit[d.cards[i].suit]++;
+	}
+	
+	return cards_with_suit.hearts >= 5 || cards_with_suit.spades >= 5 || cards_with_suit.clubs >= 5 || cards_with_suit.diamonds >= 5;
+}
+
+
+function probability(experiment, number_of_experiments) {
+	deck = Deck();
+	deck.full();
+	deck.shuffle();
+
+	let success = 0;
+	if (!number_of_experiments) number_of_experiments = 100000;
+	for (let k=0; k < number_of_experiments; k++) {
+		if (experiment(deck)) success++;
+		deck.shuffle();
+	}
+	console.log( success/number_of_experiments*100 + '%');
+}
+
+
+// Close the dropdown menu if the user clicks outside of it
+window.onclick = function(event) {
+  if (!event.target.matches('.dropbtn')) {
+    var dropdowns = document.getElementsByClassName("dropdown-content");
+    var i;
+    for (i = 0; i < dropdowns.length; i++) {
+      dropdowns[i].hide();
+    }
+  }
+} 
