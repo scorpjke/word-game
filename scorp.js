@@ -363,7 +363,13 @@ Element.prototype.css = function(s) {
     }
 
     function translate(regex, arr) {
-        regex = regex.trim().replace(/\(/g, '(?:').split(/\n+/);
+        regex = regex.trim().
+        replace(/\(/g, '(?:').
+        replace(/\\/g, '\\\\').
+        replace(/\/\//g, '阙').
+        replace(/\//g, '\\').
+        replace(/阙/g, '/').
+        split(/\n+/);
         let vars = {};
 
         for (let line of regex) {
@@ -432,13 +438,23 @@ let res = 'geschenkheit'.regex_match(`
 
 @ending = \\w*
 return gesch @vowel @vowel? nk @ending
+`);
+
+res = `Please visit https://scorpjke.github.io/word-game to practice German`.regex_match(`
+@pref = /w+
+@protocol = https?
+@domain = /w+
+@name = /w+
+@addr = [- // /w]+
+return ( @protocol ://// )? (@pref /.)?  @name /. @domain // @addr
 `);*/
 
-
-res = 'Hello! My name is John Smith.'.regex_match(`
-@first_name = \\w+
-@last_name = \\w+
-return My_name_is_ @first_name _ @last_name
+res = `Please visit https://scorpjke.github.io/word-game to practice German`.regex_match(`
+@vowel = [aiueoäüö]
+@consonant = [wrtpsdfghjklzvbnmc]
+@vowel_a = @vowel
+@vowel_b = @vowel
+return @vowel_a @vowel_b
 `);
 
 console.log(res);
