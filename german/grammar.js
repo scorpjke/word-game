@@ -405,7 +405,7 @@ ending "ending"
 = e:("en" / "em" / "es" / "er" / "e") _ {return e}
 
 der_word = stem:("d" / "welch" / "jed") ending:ending {return {stem, ending }} / ex:("das"/"die") _ {return {stem:'d',ending:ex.slice(1)} }
-ein_word = stem:("kein" / "mein" / "dein" / "sein" / "unser" / "euer" / "ihr" / "ein") ending:$(ending / _ ) {return {stem, ending: ending.trim() } }
+ein_word = stem:("kein" / "mein" / "dein" / "sein" / "unser" / "euer" / "eur" / "ihr" / "ein") ending:$(ending / _ ) {return {stem, ending: ending.trim() } }
 ws = (der_word / ein_word)
 
 noun = n:$(cap_letter letter+) _ {return n}
@@ -544,7 +544,7 @@ function decapitalize(sentence) {
 }
 
 function pull_out_sentences(text) {
-    return text.replace(/([?!.]+)\s*/g, '$1蠍').split('蠍').filter(x => x.length > 1);
+    return text.replace(/([?!.;]+)\s*/g, '$1蠍').split('蠍').filter(x => x.length > 1);
 }
 
 
@@ -690,4 +690,24 @@ function make_ending_task() {
     //let question = make_question(task_np) + s_orig.slice(offset + answer.length);
 
     return {question, answer};
+}
+
+
+function make_put_the_word_back_task() {
+    let word_arr = [];
+    let s = sentences_db.random().trim().replace(/[A-zÄäÜüÖöß]+/g, function(word){
+        word_arr.push(word);
+        return word+'燕'+word_arr.length;
+    });
+
+    let rn = Math.floor(Math.random()*word_arr.length);
+
+    s = s.replace(new RegExp("[A-zÄäÜüÖöß]+燕"+(rn+1) ), '').replace(/  /, ' ').replace(/ ([.!,?:])/, '$1').trim().replace(/([A-zÄäÜüÖöß]+)燕[0-9]+/g, '$1');
+    s = capitalize(s);
+
+    let missing_word = word_arr[rn];
+    let answer_w = word_arr[rn-1] || null;
+    if (word_arr.filter(w => w == answer_w).length > 1) answer_w = null;
+
+    return {sentence:s, missing_word, answer_n: rn+1, answer_w};
 }

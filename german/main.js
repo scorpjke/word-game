@@ -25,7 +25,7 @@ let German = function() {
 		freq: {min: 1, max: 500},
 		show_translations: true,
 		always_pronounce: false,
-		themes: new Set(['cases'])
+		themes: new Set(['word order'])
 	};
 
 	let irr_checkboxes = div();
@@ -183,6 +183,16 @@ let German = function() {
 	let current_word, already_pronounced;
 
 	let tasks = {
+		'word order': [
+			function() {
+				let task = make_put_the_word_back_task();
+				let question = task.sentence + `<br><br> The sentence above is missing the word <R>${task.missing_word}</R>. Please write the number of its position or the preceding word.`;
+				let answer = task.answer_n;
+				if (task.answer_w) answer += ` - after "${task.answer_w}"`;
+				let check = (a) => a == task.answer_n || a == task.answer_w;
+				return {question, answer, check};
+			}
+		],
 		'cases': [
 			/*
 			function() {
