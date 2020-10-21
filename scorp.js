@@ -337,10 +337,12 @@ Element.prototype.css = function(s) {
             if (typeof token === 'string') res += token;
             else {
                 arr.push(token.name);
-                res += '(' + assemble(token, arr) + ')';
+                let a = assemble(token, arr);
+                token.ass = a;
+                res += '(' + a + ')';
             }
         }
-        return res;
+        return res.replace(/ /g, '').replace(/_/g, ' ');
     }
 
     function unroll_mod(exp) {
@@ -349,10 +351,19 @@ Element.prototype.css = function(s) {
     }
 
     function process(var_name, r, vars) {
-        r = r.replace(/@([A-z]+)/g, '蠍@$1蠍').split('蠍').map(function(x){
+        r = r.replace(/(@[A-z]+([\+\*]\??)?)/g, '蠍$1蠍').split('蠍').map(function(x){
             if (x.startsWith('@')) {
-                if (!vars[x.slice(1)]) vars[x.slice(1)] = {name: x.slice(1)};
+                let found = x.match(/@([A-z]+)([\+\*]\??)?/);
+                if (!vars[found[1]]) vars[found[1]] = {name: found[1]};
+
+                if (found[2] && !vars[x.slice(1)]) {
+                    vars[x.slice(1)] = {
+                        name: '*' + found[1],
+                        value: [ vars[found[1]], found[2]]
+                    };
+                }
                 return vars[x.slice(1)];
+                
             }
             return x;
         });
@@ -362,15 +373,14 @@ Element.prototype.css = function(s) {
         vars[var_name].value = r;
     }
 
-    function translate(regex, arr) {
-        regex = regex.trim().
-        replace(/\(/g, '(?:').
-        replace(/\\/g, '\\\\').
-        replace(/\/\//g, '阙').
-        replace(/\//g, '\\').
-        replace(/阙/g, '/').
-        split(/\n+/);
-        let vars = {};
+    function translate(regex, vars, arr) {
+        regex = regex.trim()
+        .replace(/\(/g, '(?:')
+        .replace(/\\/g, '\\\\')
+        .replace(/\/\//g, '阙')
+        .replace(/\//g, '\\')
+        .replace(/阙/g, '/')
+        .split(/\n+/);
 
         for (let line of regex) {
             let var_def = line.match(/@([A-z]+)\s*=(.+)/);
@@ -379,21 +389,21 @@ Element.prototype.css = function(s) {
                 process(var_def[1], r, vars);
                 continue;
             }
-            let main = line.match(/return\s(.+)/);
+            let main = line.match(/find\s(.+)/);
             if (main) {
                 main = main[1].trim();
                 process('^', main, vars);
             }
         }
 
-        return assemble(vars['^'], arr).replace(/ /g, '').replace(/_/g, ' ');
+        return assemble(vars['^'], arr);
     }
 
     String.prototype.regex_match = function(regex) {
-        let arr = [];
-        regex = translate(regex, arr);
+        let arr = [], vars = {};
+        regex = translate(regex, vars, arr);
 
-        console.log(arr, regex);
+        console.log(arr, regex, vars);
         let found = this.match(regex);
 
         let res = {};
@@ -403,16 +413,35 @@ Element.prototype.css = function(s) {
             console.log(found);
             res['^'] = found[0];
             for (let i=0; i < arr.length; i++) {
+                let parent;
+                if (arr[i].startsWith('*')) {
+                    parent = arr[i];
+                    i++;
+                }
                 found[i+1] = found[i+1] || '';
                 if (!res[arr[i]]) res[arr[i]] = found[i+1];
                 else {
                     if (!count[arr[i]]) count[arr[i]] = 1;
                     count[arr[i]]++;
                     res[arr[i] + count[arr[i]]] = found[i+1];
-                    //if (typeof res[arr[i]] === 'string') res[arr[i]] = [res[arr[i]]];
-                    //res[arr[i]].push(found[i+1]);
+                }
+
+                if (parent) {
+                    res[parent + (count[arr[i]] || '') ] = found[i];
                 }
             }
+        }
+        
+        for (let v of Object.keys(res).filter(v => v.startsWith('*')) ) {
+            console.log(v.slice(1).replace(/\d+$/));
+            let r = new RegExp( vars[v.slice(1).replace(/\d+$/,'') ].ass, 'g');
+            console.log(r);
+            let a = [];
+            res[v].replace(r, function(x) {
+                a.push(x);
+            });
+            res[v.slice(1)] = a;
+            delete res[v];
         }
 
         return res;
@@ -424,37 +453,33 @@ Element.prototype.css = function(s) {
     };
 })();
 
-
 /*
-let res = 'geschenkheit'.regex_match(`
-@first_two = @init? (@vowel)
+let res = 'herausbekommen'.regex_match(`
+@first_two = @init? @vowel
 @pref = | ${Verb.all_pref.join(' ')}
-@prefs = @pref*
 @init = | kn pf str? spr? sch[lmnrw]? [tdkgpbf]r [kgfbp]l pfl zw qu ch @consonant
 @vowel = [aiueoäüö]
 @consonant = [wrtpsdfghjklzvbnmc]
-@rest = @first_two ((.+ e[lr])n | (.+)en)
-@syl = @first_two @vowel* @consonant*
+@rest = @first_two (.* e[lr]n | .+ en)
 
-@ending = \\w*
-return gesch @vowel @vowel? nk @ending
+find @pref* @rest
 `);
 
 res = `Please visit https://scorpjke.github.io/word-game to practice German`.regex_match(`
-@pref = /w+
 @protocol = https?
 @domain = /w+
-@name = /w+
+@subdomain = /w+ /.
 @addr = [- // /w]+
-return ( @protocol ://// )? (@pref /.)?  @name /. @domain // @addr
+find ( @protocol ://// )? @subdomain+ @domain (//@addr | //)?
 `);*/
-
-res = `Please visit https://scorpjke.github.io/word-game to practice German`.regex_match(`
+/*
+res = `visit https://scorpjke.github.io/word-game to practice German`.regex_match(`
 @vowel = [aiueoäüö]
 @consonant = [wrtpsdfghjklzvbnmc]
-@vowel_a = @vowel
 @vowel_b = @vowel
-return @vowel_a @vowel_b
-`);
+@pair = @consonant @vowel
+find @pair+
+`);*/
 
-console.log(res);
+//find @vowel @consonant @vowel+
+

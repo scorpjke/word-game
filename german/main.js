@@ -25,7 +25,7 @@ let German = function() {
 		freq: {min: 1, max: 500},
 		show_translations: true,
 		always_pronounce: false,
-		themes: new Set(['listening'])
+		themes: new Set(['cases'])
 	};
 
 	let irr_checkboxes = div();
@@ -183,6 +183,25 @@ let German = function() {
 	let current_word, already_pronounced;
 
 	let tasks = {
+		'cases': [
+			/*
+			function() {
+				let n = random_noun();
+				let prep = all_preps.random();
+				let kase = prep_to_case(prep);
+				let gender = {der:'m', die:'f', das:'n'}[n.type];
+				let article = ['ein', 'der'].random();
+				let question = `Put in the correct form:<br>` + prep + ' + ' + apply_strong_ending(article, 'nom', gender) + ' ' + n.word + ' (' + n.translation  + ')';
+				let answer = combine(prep, apply_strong_ending(article, kase, gender)) + ' ' + noun_declension(n.word);
+				return {question, answer};
+			}
+			*/
+			function(){
+				let task = make_ending_task();
+				task.question = 'Put ( ) in the correct form:<br>' + task.question;
+				return task;
+			}
+		],
 		'past participle': [
 			function() {
 				let v = random_verb();

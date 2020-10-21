@@ -375,8 +375,293 @@ function smart_unite(stem, ending) {
 }
 
 
+
+let noun_phrase_parser_code =
+`
+Expression 
+= sentence
+
+sentence = (noun_phrase / word / any_symbol)+
+
+noun_phrase
+  = prep:prep ? ws:ws ? adjs:(adj*) noun:noun
+{
+  if (prep === null && ws === null) return noun;
+  let orig_prep = prep;
+  if ( ["im","am","vom"].includes(prep) ) {ws={stem:"d",ending:"em"};prep=prep.slice(0,-1)+"n"}
+  else if ( ["zum","beim","vorm","unterm"].includes(prep) ) {ws={stem:"d",ending:"em"};prep=prep.slice(0,-1)}
+  else if ( ["aufs", "ins", "ums", "durchs", "ans",  "fürs", "vors", "übers", "unters"].includes(prep) ) {ws={stem:"d",ending:"as"};prep=prep.slice(0,-1)}
+  return {orig_prep,prep,ws,adjs,noun, location:location()};
+}
+/ prep:prep ? pronoun:pronoun {return {prep, pronoun, location:location()}}
+
+pronoun = p:("du" / "dir" / "dich" / "ich" / "mir" / "mich" / "euch" / "sie" / "ihr" / "ihnen" /  "Sie" / "Ihr" / "Ihnen" / "wir" / "uns" / "er" / "ihm" / "ihn") _ {return p}
+
+prep = p:$("zu" "m"? / "zur" / "bei" "m"? / "von" / "vom" / "vor" "m"? / "unter" "m"? /
+("auf" / "in" / "um" / "durch" / "an" /  "für" / "vor" / "über" / "unter") "s"?
+/ "mit"  / "nach" / "am" / "im" ) _ {return p}
+
+ending "ending"
+= e:("en" / "em" / "es" / "er" / "e") _ {return e}
+
+der_word = stem:("d" / "welch" / "jed") ending:ending {return {stem, ending }} / ex:("das"/"die") _ {return {stem:'d',ending:ex.slice(1)} }
+ein_word = stem:("kein" / "mein" / "dein" / "sein" / "unser" / "euer" / "ihr" / "ein") ending:$(ending / _ ) {return {stem, ending: ending.trim() } }
+ws = (der_word / ein_word)
+
+noun = n:$(cap_letter letter+) _ {return n}
+
+adj = ending:ending {return {ending}} / letter:small_letter tail:adj {
+if (tail.stem) return {stem: letter+tail.stem, ending:tail.ending}
+if (tail.ending) return {stem: letter, ending:tail.ending}
+}
+
+consonant = [ptkbdgfslrzw]
+small_letter = [a-zäüöß]
+cap_letter = [A-ZÄÜÖ]
+letter = [A-zÄäÜüÖöß]
+any_symbol = .
+word = w:$(letter+) _ {return w}
+
+_ "whitespace"
+  = [ \\t\\n\\r]+
+`;
+
+let noun_phrase_parser = peg.generate(noun_phrase_parser_code);
+
+let strong_endings = {
+    nom: {m: 'er', n: 'es', f: 'e', p: 'e'},
+    acc: {m: 'en', n: 'es', f: 'e', p: 'e'},
+    dat: {m: 'em', n: 'em', f: 'er', p: 'en'},
+    gen: {m: 'es', n: 'es', f: 'er', p: 'er'},
+};
+
+//personal pronouns! ich mich mir
+
+let personal_pronouns = {
+    ich: {acc: 'mich', dat: 'mir'},
+    du: {acc: 'dich', dat: 'dir'},
+    er: {acc: 'ihn', dat: 'ihm'},
+    sie: {acc: 'sie', dat: 'ihr/ihnen'},
+    es: {acc: 'es', dat: 'ihm'},
+    wir: {acc: 'uns', dat: 'uns'},
+    ihr: {acc: 'euch', dat: 'euch'},
+    Sie: {acc: 'Sie', dat: 'ihnen'},
+};
+
+let ein_words = 'ein kein mein dein sein unser euer ihr'.split(' ');
+
+let prep_dat = 'zu in auf mit'.split(' ');
+let prep_acc = 'für um durch über ohne bis gegen'.split(' ');
+let prep_gen = 'während wegen anstatt laut trotz'.split(' ');
+let all_preps = prep_dat.concat(prep_acc).concat(prep_gen);
+
+function prep_to_case(prep) {
+    if (prep_acc.includes(prep)) return 'acc';
+    if (prep_gen.includes(prep)) return 'gen';
+    return 'dat';
+}
+
+function combine(prep, article) {
+    if (article == 'das' && 'an in für auf um durch vor über unter'.includes(prep) ) return prep+'s';
+    else if (article == 'dem' && 'an in bei von zu vor unter'.includes(prep) ) return prep.slice(-1) == 'n' ? prep.slice(0,-1)+'m': prep+'m';
+    else if (article == 'der' && prep == 'zu') return 'zur';
+    return prep + ' ' + article;
+}
+
+function apply_strong_ending(word, kase, gender) {
+    let ending = strong_endings[kase][gender];
+
+    if (word == 'der') {
+        if (ending == 'e') return 'die';
+        else if ( ['nom','acc'].includes(kase) && gender == 'n') return 'das';
+        return 'd' + ending;
+    }
+    else if (ein_words.includes(word) && kase == 'nom' && 'mn'.includes(gender)) return word;
+
+    return word + ending;
+}
+
+function apply_weak_ending(word, kase, gender) {
+    if ( kase == 'acc' && gender == 'm' ) return word + 'en';
+    if ( ['nom','acc'].includes(kase) && gender != 'p' ) return word + 'e'
+    return word + 'en';
+}
+
+
 function umlautify(stem) {
-    return stem.replace(/[aou]/, function(x){
-        return {'a':'ä', 'o':'ö', 'u':'ü'}[x];
-    });
+    return stem.replace(/eu/, '蠍').replace(/([aou])/i, '$1\u0308').replace(/蠍/, 'eu');
+}
+
+let plural_er = 'Mann Kind Haus Mund'.split(' ');
+let plural_e = 'Maus Nacht';
+
+function make_plural(noun, gender) {
+    let last = noun.slice(-1);
+    if ( last == 'e' ) return noun+'n';
+    if (noun.match(/e[rnl]$/) || noun.endsWith('chen') ) return umlautify(noun);
+    if ( gender == 'f' && !plural_e.includes(noun) ) return noun+'en';
+    if ( 'aiuoy'.includes(last) ) return noun + 's';
+
+    let ending = plural_er.includes(noun) ? 'er' : 'e';
+    return umlautify(noun) + ending;
+}
+
+function noun_declension(word, is_plural, kase) {
+    if ( personal_pronouns[word] ) return personal_pronouns[word][kase];
+    if (kase == 'dat' && is_plural && word.slice(-1) != 'n' ) return word + 'n';
+    return word;
+}
+
+function find_noun_phrase(sentence) {
+
+}
+
+for (let s of ['ich habe deine Vater gesehen', 'er muss mit dem Arzt sprachen'])
+    find_noun_phrase(s);
+
+/*
+function noun_phrase_declension(arr, kase, gender) {
+    let res = [];
+    if (arr[arr.length-1] )
+    res.push( noun_declension(arr[arr.length-1], gender=='p', kase) );
+    if (arr.length == 1) return res;
+    
+    for (let i = arr.length-2; i > 0; i++) {
+        res.push( apply_weak_ending(arr[i],kase,gender) );
+    }
+
+    apply_strong_ending(arr[0])
+}*/
+
+let sentences_db = [];
+
+function capitalize(sentence) {
+    return sentence[0].toUpperCase() + sentence.slice(1);
+}
+
+function decapitalize(sentence) {
+    return sentence[0].toLowerCase() + sentence.slice(1);
+}
+
+function pull_out_sentences(text) {
+    return text.replace(/([?!.]+)\s*/g, '$1蠍').split('蠍').filter(x => x.length > 1);
+}
+
+
+sentences_db = sentences_db.concat(pull_out_sentences(`
+Vor kurzem sind wir umgezogen. „Wir“ – das sind mein Mann und ich und unsere zwei Kinder. Zuerst wollten wir nur eine größere Wohnung, um zu Viert mehr Platz zu haben. Dann sind wir aber zufällig auf ein kleines Haus mit einem kleinen Garten gestoßen und haben uns sofort darin verliebt und uns dafür entschieden, dort einzuziehen.
+
+Jetzt kann jedes Kind ein eigenes Zimmer haben und es gibt sogar ein Büro für die beiden Eltern. Noch dazu werden wir einen Sandkasten im Garten einrichten, sodass die Kinder dort spielen können mit den Freunden, die sie hoffentlich in der Umgebung finden.
+
+Im Moment gibt es noch ein großes Durcheinander im Haus, viele Kartons sind noch nicht ausgepackt, aber das wird sich bald ändern. Wir sind alle sehr froh.
+
+ ich habe vor wenigen Wochen eine neue Jeans bei Ihnen bestellt. Ich war sehr glücklich, die Hose ist nach wenigen Tagen schon angekommen. Sie sieht aus wie in der Werbung und gefällt mir sehr. Leider haben Sie mir die Jeans in der falschen Größe geschickt. Die Hose passt mir nicht und ich kann sie daher nicht tragen. Ich bitte Sie daher um einen Umtausch der Ware.
+
+Bitte schicken Sie mir per Post eine neue Jeans in der richtigen Größe zu. Ich schicke Ihnen dann die falsche Hose per Post zurück. Falls sie die Hose nicht in meiner Größe vorrätig haben, möchte ich gern mein Geld zurück.
+
+Der Müritzsee ist das größte Gewässer in Deutschland. Er liegt im Bundesland Mecklenburg-Vorpommern. Der Bodensee ist noch größer als der Müritzsee. Er liegt jedoch nicht komplett in Deutschland. Große Teile des Bodensees liegen in der Schweiz und in Österreich.
+
+Im Sommer ist der Müritzsee ein beliebtes Reiseziel. Er ist über 3,5 Kilometer lang. An einigen Stellen ist der See bis zu 750 Meter breit. Gäste fahren aus ganz Deutschland an den See. Viele Gäste kommen auch nur für einen Tag an den Müritzsee. Die Bundeshauptstadt Berlin liegt mit dem Auto nur 90 Minuten entfernt. Größere Städte am Ufer des Sees sind Waren und Röbel.
+
+Heute ist Freitag. Wir haben heute Morgen in unseren Kühlschrank geschaut und gesehen, dass er leer ist. Da wir am Wochenende viele von unseren Freunden zu einer Party eingeladen haben, müssen wir nun einen Großeinkauf machen.
+
+Unsere Freunde sind sehr unterschiedlich, einige möchten gerne alkoholische Getränke, andere lieber nur Saft oder Wasser. Also müssen wir viele verschiedene Sachen einkaufen. Wir haben entschieden, einige Salate zu machen, sodass wir nun viel Obst und Gemüse kaufen.
+
+Wenn das Wetter schön ist, könnten wir auch einen Grill auf den Balkon stellen. Das bedeutet, wir müssen auch Würstchen und ein bisschen Fleisch kaufen, damit alle Gäste zufrieden sind. Wir hoffen, dass es ein schönes Fest wird. 
+
+Im Sommer reisen viele Menschen gerne nach Österreich. Besonders in Wien und Salzburg treffen sich Touristen aus aller Welt, um auf Konzerte zu gehen, Museen zu besuchen und außerhalb der Städte kurze Wanderungen zu unternehmen. In Wien besuchen die Touristen am liebsten den Stephansdom und das Schloss Schönbrunn; in Salzburg besonders die Festung Hohensalzburg und das Haus, in dem der Komponist Wolfgang Amadeus Mozart geboren wurde.
+
+Wer nach Österreich reist, schläft gerne im Hotel, deswegen sind manche Hotels im Sommer ausgebucht. Andere Leute übernachten gerne in Jugendherbergen oder mieten Wohnungen, in denen sie sich selbst versorgen müssen. Im Internet vergleichen sie die Preise und finden so das günstigste und das für sie beste Angebot in der Stadt. Überrascht sind sie oft, weil die Supermärkte in Österreich am Wochenende und in der Nacht nicht geöffnet sind. Trotzdem gefällt es den meisten Touristen in Wien und Salzburg sehr gut, schließlich kommen viele auch gerne wieder nach Österreich zurück.
+
+Tina ist neu in der Stadt und kennt sich noch nicht aus. Sie möchte gerne etwas zu essen und zu trinken kaufen, weiß aber nicht, wo sie einkaufen kann.
+
+Im Treppenhaus trifft sie ihren neuen Nachbarn Ben. "Hallo, ich bin Ben. Bist du neu hier?", fragt Ben. "Ja, ich wohne erst seit gestern hier. Ich heiße Tina. Kannst du mir sagen, wo der nächste Supermarkt ist?", möchte Tina wissen. "Lass uns zusammen gehen, ich wollte auch gerade los und ein paar Kleinigkeiten besorgen. Dann kann ich dir den Weg zeigen." "Das klingt gut, danke."
+
+Also machen die beiden sich gemeinsam auf den Weg zum Supermarkt, um ihre Einkäufe zu erledigen.
+`));
+
+let orig_form = {
+    'mir':'ich', 'mich':'ich',
+    'dir':'du', 'dich':'du',
+    'ihr':'sie',
+    'ihn':'er', 'ihm':'er',
+    'uns':'wir', 'euch':'ihr'
+};
+/*
+function print_parsed(d, hide_prep) {
+    let res = '';
+    for (let token of d) {
+        if (typeof token === "string") res+= token + ' ';
+        else {
+            let words = [];
+            if (token.chosen) words.push("(");
+            if (token.orig_prep != token.prep && !token.chosen) words.push(token.orig_prep);
+            else {
+                if (token.chosen && hide_prep) words.push('<possible prep>');
+                else if (token.prep) words.push(token.prep);
+                if (token.ws) words.push(token.ws.stem + (token.chosen ? '...' : token.ws.ending) );
+            }
+            if (token.adjs) for (let a of token.adjs) words.push(a.stem + (token.chosen ? '...' : a.ending));
+            if (token.pronoun) {
+                if (token.chosen) words.push(orig_form[token.pronoun] || token.pronoun);
+                else words.push(token.pronoun);
+            }
+            if (token.chosen) words.push(")");
+            if (token.noun) words.push(token.noun);
+            res += words.join(' ') + ' ';
+        }
+    }
+    return capitalize(res) ;
+}
+*/
+
+//sentences_db = ["In Wien besuchen die Touristen am liebsten den Stephansdom und das Schloss Schönbrunn; in Salzburg besonders die Festung Hohensalzburg und das Haus, in dem der Komponist Wolfgang Amadeus Mozart geboren wurde."];
+
+function make_answer(token) {
+    let words = [];
+    if (token.orig_prep != token.prep) words.push(token.orig_prep);
+    else {
+        if (token.prep) words.push(token.prep);
+        if (token.ws) words.push(token.ws.stem + token.ws.ending );
+    }
+    if (token.adjs) for (let a of token.adjs) words.push(a.stem + a.ending);
+    if (token.pronoun) words.push(token.pronoun);
+    return words.join(' ');
+}
+
+function make_question(token) {
+    let words = [];
+
+    if (token.prep) words.push(token.prep);
+    if (token.ws) words.push(token.ws.stem + '...' );
+
+    if (token.adjs) for (let a of token.adjs) words.push(a.stem + '...');
+
+    if (token.pronoun) {
+        words.push(orig_form[token.pronoun] || token.pronoun);
+    }
+    return '( ' + words.join(' ') + ' )';
+}
+
+function make_ending_task() {
+    let s_orig = sentences_db.random().trim();
+    let s = s_orig.replace(/([A-zÄäÜüÖöß]+) ?/g, '$1 ');
+    s = decapitalize(s.trim());
+    let d = noun_phrase_parser.parse(s);
+
+    let task_np = d.filter(t => typeof t === 'object').random();
+    if (!task_np
+        || task_np.prep && task_np.pronoun == 'ihr'
+        || !task_np.pronoun && task_np.adjs.length == 0 && !task_np.ws
+        || ['Sie', 'Ihr', 'Ihnen'].includes(task_np.noun)
+    ) return make_ending_task();
+    
+    //console.log(task_np);
+    let answer = make_answer(task_np);
+    let offset = task_np.location.start.offset - 5; if (offset < 0) offset = 0;
+    let question = s_orig.slice(0, offset) +  s_orig.slice(offset).replace(new RegExp(`\\b`+answer+`\\b`, 'i'), make_question(task_np) );
+    
+    //let question = make_question(task_np) + s_orig.slice(offset + answer.length);
+
+    return {question, answer};
 }
