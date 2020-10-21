@@ -578,6 +578,32 @@ Tina ist neu in der Stadt und kennt sich noch nicht aus. Sie möchte gerne etwas
 Im Treppenhaus trifft sie ihren neuen Nachbarn Ben. "Hallo, ich bin Ben. Bist du neu hier?", fragt Ben. "Ja, ich wohne erst seit gestern hier. Ich heiße Tina. Kannst du mir sagen, wo der nächste Supermarkt ist?", möchte Tina wissen. "Lass uns zusammen gehen, ich wollte auch gerade los und ein paar Kleinigkeiten besorgen. Dann kann ich dir den Weg zeigen." "Das klingt gut, danke."
 
 Also machen die beiden sich gemeinsam auf den Weg zum Supermarkt, um ihre Einkäufe zu erledigen.
+
+Wir fahren in den Ferien immer ans Meer. Wir baden gerne und freuen uns über die Wellen. Besonders wenn die Sonne scheint und es richtig heiß ist, fühlen wir uns am Meer sehr wohl. Das Wasser ist kühl und wir können auch am Strand im Schatten liegen und ein interessantes Buch lesen. Muscheln suchen macht uns viel Spaß oder wir bauen eine große Burg. Dort können wir dann auch unsere Handtücher ausbreiten.
+
+Wenn das Wetter nicht so schön ist, gehen wir am Meer spazieren oder wir gehen in die nächste Stadt und machen einen Einkaufsbummel. Ein Urlaub am Meer ist für uns immer gut für eine Pause im Sommer. 
+
+Heute ist der 30. Juli. Übermorgen habe ich meinen zwanzigsten Geburtstag und ich habe eine große Party geplant. Zu meiner Feier habe ich zwanzig Leute eingeladen, für die ich kochen werde. Als ich heute in den Kühlschrank sah, stellte ich aber fest, dass er schon fast leer ist. Ich muss jetzt einen Großeinkauf machen: Meine Freunde mögen ganz unterschiedliche Sachen, daher ist die Einkaufsliste sehr lang.
+
+Viele von ihnen trinken gerne alkoholische Getränke wie Bier und Wein. Für andere kaufe ich Wasser und Fruchtsaft ein. Wenn wir grillen, muss ich auch aufpassen, dass meine vegetarischen Freunden etwas Gutes zu essen bekommen. Für sie werde ich einen guten Salat vorbereiten und Käse zum Grillen kaufen. Die anderen Freunde essen gerne Würstchen und Steaks.
+
+Wenn die Sonne scheint, können wir bis spät in die Nacht im Garten sitzen und uns gut unterhalten. Ich freue mich schon auf das Fest und ich hoffe, dass es meinen Freunden auch viel Spaß machen wird.
+
+Anna und Stefan ziehen heute um. Bisher hat Anna in München studiert und Stefan hat in Bremen als Ingenieur gearbeitet. Jetzt hat Anna eine Arbeit in Hamburg gefunden und das Paar hat sich entschieden zusammenzuziehen.
+
+Mit dem Umzugswagen bringen Anna und Stefan ihre Möbel und alles was sonst noch dazu gehört in ihre neue gemeinsame Wohnung. Die neue Wohnung hat 3 Zimmer und ist schön groß. Das Wohnzimmer ist der größte Raum. Dann gibt es noch ein Schlafzimmer und ein Kinderzimmer. Dieses wird erstmal als Büro dienen. Das Badezimmer hat eine Dusche, eine Badewanne und ein großes Fenster.
+
+Ihre Freunde helfen den beiden beim Umzug. Am Abend wird gegrillt und alle freuen sich, dass der Umzug geschafft ist.
+
+Viele Leute lieben Einkaufszentren. Auch wenn man nicht unbedingt etwas kaufen möchte, gibt es immer etwas zu sehen. Im Winter ist es warm und im Sommer kühl. Man kann durch die Galerien schlendern und sich die Angebote anschauen. Vielleicht findet man ja doch etwas Interessantes, oder etwas, was man schon lange gesucht hat.
+
+Auch wenn man mit Freunden in ein Einkaufszentrum geht, macht das Spaß. Da es in den meisten Zentren auch Cafés und Eisdielen gibt, kann man sich zusammensetzen und ein bisschen diskutieren, ohne vom Wetter abhängig zu sein. In einem Einkaufszentrum kann man alle verschiedenen Arten von Geschäften an einem Ort finden und muss nicht von einem zum anderen gehen oder fahren. Es gibt ebenso Lebensmittel wie Kleider oder Haushaltswaren und Drogerieartikel. 
+
+Mein Name ist Nadja Müller. Jeden Tag stehe ich um 6:00 Uhr auf. Noch bevor ich ins Bad gehe, schalte ich die Kaffeemaschine ein. Ohne meinen Kaffee am Morgen habe ich den ganzen Tag schlechte Laune. Das ist nicht gut für meinen Job.
+
+Ich arbeite in einem Kindergarten und da gehört gute Laune sozusagen zur Berufsbeschreibung dazu. Die Kinder sind sehr neugierig und lernen gerne durch Spiele und Geschichten. Wir lesen und singen, malen und basteln und wenn die Kleinen ihren Mittagsschlaf machen, kümmern wir Erzieherinnen uns um die Büroarbeit.
+
+Abends nach der Arbeit treffe ich mich oft mit Freunden oder gehe zum Sport. Am Wochenende kann ich gut abschalten und entspannen.
 `));
 
 let orig_form = {
